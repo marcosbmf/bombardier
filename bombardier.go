@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,24 +14,25 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/codesenberg/bombardier/internal"
+	"github.com/marcosbmf/bombardier/internal"
 
 	"github.com/cheggaaa/pb"
 	fhist "github.com/codesenberg/concurrent/float64/histogram"
 	uhist "github.com/codesenberg/concurrent/uint64/histogram"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 type bombardier struct {
 	bytesRead, bytesWritten int64
 
 	// HTTP codes
-	req1xx uint64
-	req2xx uint64
-	req3xx uint64
-	req4xx uint64
-	req5xx uint64
-	others uint64
+	req1xx  uint64
+	req2xx  uint64
+	req3xx  uint64
+	req4xx  uint64
+	req5xx  uint64
+	others  uint64
+	reqCode [601]uint64
 
 	conf        config
 	barrier     completionBarrier
@@ -209,6 +212,10 @@ func (b *bombardier) prepareTemplate() (*template.Template, error) {
 			"StringToBytes": func(s string) []byte {
 				return []byte(s)
 			},
+			"ParseMap": func(m map[int]uint64) string {
+				j, _ := json.MarshalIndent(m, "", " ")
+				return string(j)
+			},
 			"UUIDV1": uuid.NewV1,
 			"UUIDV2": uuid.NewV2,
 			"UUIDV3": uuid.NewV3,
@@ -230,7 +237,8 @@ func (b *bombardier) writeStatistics(
 	b.reqs++
 	b.rpl.Unlock()
 	var counter *uint64
-	switch code / 100 {
+	c := code / 100
+	switch c {
 	case 1:
 		counter = &b.req1xx
 	case 2:
@@ -243,6 +251,9 @@ func (b *bombardier) writeStatistics(
 		counter = &b.req5xx
 	default:
 		counter = &b.others
+	}
+	if code >= 0 && code <= 599 {
+		atomic.AddUint64(&b.reqCode[code], 1)
 	}
 	atomic.AddUint64(counter, 1)
 }
@@ -357,6 +368,13 @@ func (b *bombardier) printIntro() {
 }
 
 func (b *bombardier) gatherInfo() internal.TestInfo {
+	codeList := map[int]uint64{}
+	for k, v := range b.reqCode {
+		if v != 0 {
+			codeList[k] = v
+		}
+	}
+
 	info := internal.TestInfo{
 		Spec: internal.Spec{
 			NumberOfConnections: b.conf.numConns,
@@ -376,6 +394,7 @@ func (b *bombardier) gatherInfo() internal.TestInfo {
 
 			Rate: b.conf.rate,
 		},
+
 		Result: internal.Results{
 			BytesRead:    b.bytesRead,
 			BytesWritten: b.bytesWritten,
@@ -390,6 +409,7 @@ func (b *bombardier) gatherInfo() internal.TestInfo {
 
 			Latencies: b.latencies,
 			Requests:  b.requests,
+			CodeList:  codeList,
 		},
 	}
 
@@ -428,6 +448,23 @@ func (b *bombardier) printStats() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
+	if b.conf.outFile != "" {
+		if j, err := b.jsonTemplateIndented(info); err == nil {
+			ioutil.WriteFile(b.conf.outFile, j, os.ModeAppend)
+		}
+	}
+}
+
+func (b *bombardier) jsonTemplateIndented(info internal.TestInfo) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := b.template.Execute(buf, info); err != nil {
+		return nil, err
+	}
+	dst := new(bytes.Buffer)
+	if err := json.Indent(dst, buf.Bytes(), "", "  "); err != nil {
+		return nil, err
+	}
+	return dst.Bytes(), nil
 }
 
 func (b *bombardier) redirectOutputTo(out io.Writer) {

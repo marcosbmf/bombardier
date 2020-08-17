@@ -1,0 +1,22 @@
+{
+    "SessionId": "1",
+	"Language": "Portugues",
+	"CountryCode": "PT",
+	"Country": "Brazil",
+	"Version": "1.0.0",
+	"Model": "iPhone",
+	"Room": "gameplay",
+	"PingMean": 20.0,
+	"PingMedian": 25.0,
+	"PingMin": 8,
+	"PingMax": 60,
+	"JitterMean": 1.0,
+	"JitterMedian": 1.0,
+	"JitterMin": 1,
+	"JitterMax": 1,
+	"PacketLossMean": 1.0,
+	"PacketLossMedian": 1.0,
+	"PacketLossMin": 10,
+	"PacketLossMax": 10,
+	"DisconnectionTime": 8.0
+}

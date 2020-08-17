@@ -2,8 +2,10 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -87,7 +89,8 @@ func (c *fasthttpClient) do() (
 	req.Header.SetMethod(c.method)
 	req.SetRequestURI(c.requestURI)
 	if c.body != nil {
-		req.SetBodyString(*c.body)
+		newBody := strings.Replace(*c.body, `41aaf99-5b7b-4978-a0d9-510853b8c304`, fmt.Sprintf(`%v`, rand.Int63()), 1)
+		req.SetBodyString(newBody)
 	} else {
 		bs, bserr := c.bodProd()
 		if bserr != nil {

@@ -26,7 +26,8 @@ type config struct {
 
 	printIntro, printProgress, printResult bool
 
-	format format
+	format  format
+	outFile string
 }
 
 type testTyp int

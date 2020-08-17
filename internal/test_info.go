@@ -85,6 +85,7 @@ type Results struct {
 
 	Latencies ReadonlyUint64Histogram
 	Requests  ReadonlyFloat64Histogram
+	CodeList  map[int]uint64
 }
 
 // ReadonlyUint64Histogram is a readonly histogram with uint64 keys

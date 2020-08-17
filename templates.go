@@ -1,11 +1,16 @@
 package main
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/marcosbmf/bombardier/template"
+)
 
 var (
 	templates = map[string][]byte{
 		"plain-text": []byte(plainTextTemplate),
 		"json":       []byte(jsonTemplate),
+		"custom":     []byte(template.CustomTemplate),
 	}
 )
 
@@ -29,6 +34,8 @@ func formatFromString(formatSpec string) format {
 		return knownFormat("plain-text")
 	case "j", "json":
 		return knownFormat("json")
+	case "custom":
+		return knownFormat("custom")
 	}
 	// nil represents unknown format
 	return nil
