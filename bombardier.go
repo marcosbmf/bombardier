@@ -450,13 +450,19 @@ func (b *bombardier) printStats() {
 	}
 	if b.conf.outFile != "" {
 		if j, err := b.jsonTemplateIndented(info); err == nil {
-			ioutil.WriteFile(b.conf.outFile, j, os.ModeAppend)
+			err = ioutil.WriteFile(b.conf.outFile, j, os.ModePerm)
+			if err != nil {
+				fmt.Println("Error saving to file: ", err)
+			}
+		} else {
+			fmt.Println("Error generating custom template:", err)
 		}
 	}
 }
 
 func (b *bombardier) jsonTemplateIndented(info internal.TestInfo) ([]byte, error) {
 	buf := new(bytes.Buffer)
+	b.conf.format = knownFormat("custom")
 	if err := b.template.Execute(buf, info); err != nil {
 		return nil, err
 	}
