@@ -461,8 +461,12 @@ func (b *bombardier) printStats() {
 }
 
 func (b *bombardier) jsonTemplateIndented(info internal.TestInfo) ([]byte, error) {
+	var err error
 	buf := new(bytes.Buffer)
 	b.conf.format = knownFormat("custom")
+	if b.template, err = b.prepareTemplate(); err != nil {
+		return nil, err
+	}
 	if err := b.template.Execute(buf, info); err != nil {
 		return nil, err
 	}
