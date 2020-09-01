@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -42,6 +42,7 @@ type fasthttpClient struct {
 
 	headers                  *fasthttp.RequestHeader
 	host, requestURI, method string
+	fiu                      uint64
 
 	body    *string
 	bodProd bodyStreamProducer
@@ -89,7 +90,7 @@ func (c *fasthttpClient) do() (
 	req.Header.SetMethod(c.method)
 	req.SetRequestURI(c.requestURI)
 	if c.body != nil {
-		newBody := strings.Replace(*c.body, `41aaf99-5b7b-4978-a0d9-510853b8c304`, fmt.Sprintf(`%v`, rand.Int63()), 1)
+		newBody := strings.Replace(*c.body, `41aaf99-5b7b-4978-a0d9-510853b8c304`, fmt.Sprintf(`%v`, atomic.AddUint64(&c.fiu, 1)), 1)
 		req.SetBodyString(newBody)
 	} else {
 		bs, bserr := c.bodProd()

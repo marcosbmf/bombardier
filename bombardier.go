@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
@@ -488,6 +489,7 @@ func (b *bombardier) disableOutput() {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	cfg, err := parser.parse(os.Args)
 	if err != nil {
 		fmt.Println(err)
